@@ -18,6 +18,8 @@ public class LoadingView extends View {
     private int itemHeight = 0;
     private float mInterpolatedTime = 0;
     private int ITEM_COUNT = 8;
+    private WavingAnimation wa;
+    private int itemSpace;
 
     public LoadingView(Context context, AttributeSet attrs, int defStyle) {
         super(context, attrs, defStyle);
@@ -39,8 +41,6 @@ public class LoadingView extends View {
         }
     }
 
-    WavingAnimation wa;
-    private int itemSpace;
 
     public LoadingView(Context context) {
         super(context);
@@ -52,11 +52,7 @@ public class LoadingView extends View {
         paint.setAntiAlias(true); // 设置画笔为抗锯齿
         paint.setColor(Color.BLACK); // 设置画笔颜色
         paint.setStyle(Style.FILL);
-        wa = new WavingAnimation();
-        wa.setDuration(600);
-        wa.setInterpolator(new LinearInterpolator());
-        wa.setRepeatCount(Animation.INFINITE);
-        wa.setRepeatMode(Animation.RESTART);
+
 
         itemWidth = 10;
         itemHeight = 60;
@@ -68,24 +64,19 @@ public class LoadingView extends View {
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
-        if (this.getVisibility() != View.GONE) {
-            if (!wa.hasStarted()) {
-                this.startAnimation(wa);
-            }
 
-            for (int i = 1; i <= ITEM_COUNT; i++) {
+        for (int i = 1; i <= ITEM_COUNT; i++) {
 
-                final float x = Math.abs((float) Math.sin((1 - mInterpolatedTime) * (float) Math.PI + i * 0.3));
-                final int baseAlpha = (0xffffffff & 0xff000000) >>> 24;
-                final int imag = Math.min((int) (baseAlpha * x) + 20, 0xff);
+            final float x = Math.abs((float) Math.sin((1 - mInterpolatedTime) * (float) Math.PI + i * 0.3));
+            final int baseAlpha = (0xffffffff & 0xff000000) >>> 24;
+            final int imag = Math.min((int) (baseAlpha * x) + 20, 0xff);
 
-                final int color = imag << 24 | (0xffffffff & 0xffffff);
+            final int color = imag << 24 | (0xffffffff & 0xffffff);
 
-                paint.setColor(color);
-                canvas.drawRect(i * itemSpace * 2, (itemHeight - itemHeight * x + itemHeight / 3.0f) / 2.0f, i * itemSpace * 2 + itemWidth,
-                        (itemHeight - itemHeight * x) / 2.0f + itemHeight * x + itemHeight / 3.0f, paint);
+            paint.setColor(color);
+            canvas.drawRect(i * itemSpace * 2, (itemHeight - itemHeight * x + itemHeight / 3.0f) / 2.0f, i * itemSpace * 2 + itemWidth,
+                    (itemHeight - itemHeight * x) / 2.0f + itemHeight * x + itemHeight / 3.0f, paint);
 
-            }
         }
     }
 
@@ -96,4 +87,55 @@ public class LoadingView extends View {
 
         super.onMeasure(widthMeasureSpec, heightMeasureSpec);
     }
+
+
+    public void setVisibility(int v) {
+        if (getVisibility() != v) {
+            super.setVisibility(v);
+
+            if (v == GONE || v == INVISIBLE) {
+                stopAnimation();
+            } else {
+                startAnimation();
+            }
+        }
+    }
+
+    private void stopAnimation() {
+        this.clearAnimation();
+        postInvalidate();
+    }
+
+    private void startAnimation() {
+        wa = new WavingAnimation();
+        wa.setDuration(600);
+        wa.setInterpolator(new LinearInterpolator());
+        wa.setRepeatCount(Animation.INFINITE);
+        wa.setRepeatMode(Animation.RESTART);
+        startAnimation(wa);
+    }
+
+    @Override
+    protected void onVisibilityChanged(View changedView, int visibility) {
+        super.onVisibilityChanged(changedView, visibility);
+
+        if (visibility == GONE || visibility == INVISIBLE) {
+            stopAnimation();
+        } else {
+            startAnimation();
+        }
+    }
+
+    @Override
+    protected void onAttachedToWindow() {
+        super.onAttachedToWindow();
+        startAnimation();
+    }
+
+    @Override
+    protected void onDetachedFromWindow() {
+        stopAnimation();
+        super.onDetachedFromWindow();
+    }
+
 }
